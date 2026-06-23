@@ -42,7 +42,7 @@ export const DEMO_JOBS = [
     type: 'Internship',
     category: 'Compliance & Risk',
     salary: { min: 120000, max: 180000, currency: 'NGN', period: 'monthly' },
-    experience: 'Less than 1 year',
+    experience: '0-1 year',
     level: 'Entry',
     description:
       'Support the legal and compliance team on regulatory research, policy reviews and risk assessments at a growing investment firm.',
@@ -128,7 +128,7 @@ export const DEMO_JOBS = [
     type: 'Internship',
     category: 'Finance',
     salary: { min: 150000, max: 220000, currency: 'NGN', period: 'monthly' },
-    experience: 'Less than 1 year',
+    experience: '0-1 year',
     level: 'Entry',
     description:
       'Support the capital markets desk with research, financial modelling and transaction preparation at a leading securities firm.',

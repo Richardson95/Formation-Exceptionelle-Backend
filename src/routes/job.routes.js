@@ -15,6 +15,7 @@ const jobOwner = ownerOrAdmin(async (req) => {
 router.get('/', authRequired, validate({ query: listJobsQuerySchema }), ctrl.listJobs);
 router.get('/featured', authRequired, ctrl.featuredJobs);
 router.get('/internships', authRequired, ctrl.internships);
+router.get('/mine', authRequired, ctrl.myJobs); // employer's own postings (any status)
 router.post('/', authRequired, validate({ body: createJobSchema }), ctrl.createJob);
 router.get('/:id', authRequired, ctrl.getJob);
 router.patch('/:id', authRequired, jobOwner, validate({ body: updateJobSchema }), ctrl.updateJob);

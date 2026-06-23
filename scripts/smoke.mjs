@@ -194,6 +194,16 @@ try {
   const notOwnerEdit = await req('PATCH', '/jobs/j001', { token: userToken, body: { title: 'Hijack' } });
   check('non-owner cannot edit a job', notOwnerEdit.status === 403);
 
+  // Employer "My Job Postings" (/jobs/manage) — own jobs incl. pending, with applicant counts.
+  const mine = await req('GET', '/jobs/mine', { token: userToken });
+  check('GET /jobs/mine returns my posted job (any status)', mine.json.some((j) => j.id === newJobId) && mine.json.every((j) => typeof j.applicantCount === 'number'));
+  // admin posted the seeded jobs; j001 has 1 applicant (Sam), shortlisted earlier.
+  const adminMine = await req('GET', '/jobs/mine', { token: adminToken });
+  const j001Mine = adminMine.json.find((j) => j.id === 'j001');
+  check('applicant counts on my jobs', j001Mine && j001Mine.applicantCount === 1 && j001Mine.shortlistedCount === 1);
+  const adminJobsList = await req('GET', '/admin/jobs', { token: adminToken });
+  check('admin jobs list carries applicantCount', adminJobsList.json.find((j) => j.id === 'j001')?.applicantCount === 1);
+
   // AI assistant fallback
   const ai = await req('POST', '/assistant/chat', { body: { messages: [{ role: 'user', content: 'what M&A courses do you have?' }] } });
   check('AI assistant fallback reply', ai.status === 200 && ai.json.reply && Array.isArray(ai.json.quickActions));

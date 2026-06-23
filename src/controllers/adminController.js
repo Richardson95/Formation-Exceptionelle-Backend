@@ -10,7 +10,7 @@ import Certificate from '../models/Certificate.js';
 import Review from '../models/Review.js';
 import { relativeTime, dateOnly } from '../utils/relativeTime.js';
 import { normalizePricing, buildCourseFilter } from './courseController.js';
-import { normalizeSalary } from './jobController.js';
+import { normalizeSalary, withApplicantCounts } from './jobController.js';
 import { fulfillOrder, refundOrder } from '../services/orderService.js';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -244,7 +244,7 @@ export const listJobs = asyncHandler(async (req, res) => {
   if (q.isActive === 'false' || q.isActive === false) filter.isActive = false;
   if (q.isFeatured === 'true' || q.isFeatured === true) filter.isFeatured = true;
   const jobs = await Job.find(filter).sort({ createdAt: -1 });
-  res.json(jobs);
+  res.json(await withApplicantCounts(jobs));
 });
 
 export const approveJob = asyncHandler(async (req, res) => {

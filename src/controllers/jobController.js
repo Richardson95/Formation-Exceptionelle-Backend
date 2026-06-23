@@ -1,7 +1,35 @@
 import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import Job from '../models/Job.js';
+import Application from '../models/Application.js';
 import { dateOnly } from '../utils/relativeTime.js';
+
+/**
+ * Attach actual applicant counts (real Application records) to a list of jobs:
+ * `applicantCount` (total) and `shortlistedCount`. Powers the "Applicants (N)" /
+ * "Total Applicants" / "Shortlisted" figures on the manage & admin job views —
+ * distinct from the marketing `applications` counter stored on the job.
+ */
+export async function withApplicantCounts(jobs) {
+  if (jobs.length === 0) return [];
+  const ids = jobs.map((j) => j.id);
+  const counts = await Application.aggregate([
+    { $match: { jobId: { $in: ids } } },
+    {
+      $group: {
+        _id: '$jobId',
+        total: { $sum: 1 },
+        shortlisted: { $sum: { $cond: [{ $eq: ['$status', 'shortlisted'] }, 1, 0] } },
+      },
+    },
+  ]);
+  const byId = new Map(counts.map((c) => [c._id, c]));
+  return jobs.map((j) => ({
+    ...j.toJSON(),
+    applicantCount: byId.get(j.id)?.total || 0,
+    shortlistedCount: byId.get(j.id)?.shortlisted || 0,
+  }));
+}
 
 const SORT_MAP = {
   newest: { createdAt: -1 },
@@ -53,6 +81,16 @@ export const featuredJobs = asyncHandler(async (req, res) => {
 export const internships = asyncHandler(async (req, res) => {
   const jobs = await Job.find({ type: 'Internship', isActive: true }).sort({ createdAt: -1 });
   res.json(jobs);
+});
+
+/**
+ * All jobs posted by the current user — ANY status (pending/approved/rejected,
+ * active or not). Powers the employer ManageJobsView (`/jobs/manage`); the public
+ * GET / only returns approved+active and would hide the poster's own listings.
+ */
+export const myJobs = asyncHandler(async (req, res) => {
+  const jobs = await Job.find({ postedBy: req.userId }).sort({ createdAt: -1 });
+  res.json(await withApplicantCounts(jobs));
 });
 
 export const getJob = asyncHandler(async (req, res) => {
