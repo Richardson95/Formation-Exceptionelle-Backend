@@ -73,7 +73,7 @@ const courseSchema = new mongoose.Schema(
     language: { type: String, enum: COURSE_LANGUAGES, default: 'English' },
     price: { type: Number, default: 0, min: 0 },
     originalPrice: { type: Number, default: 0, min: 0 },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'NGN' },
     thumbnail: { type: String, default: '' },
     previewVideo: { type: String, default: '' },
     rating: { type: Number, default: 0 },

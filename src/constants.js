@@ -30,6 +30,10 @@ export const JOB_LEVELS = ['Entry', 'Mid-level', 'Senior', 'Manager'];
 export const JOB_SORTS = ['newest', 'popular', 'salary-high'];
 export const SALARY_PERIODS = ['monthly', 'yearly', 'hourly'];
 
+// The platform's only currency — courses, salaries, orders and revenue are all
+// in Nigerian Naira. Render amounts with a ₦ prefix and toLocaleString().
+export const CURRENCY = 'NGN';
+
 export const APPLICATION_STATUS = [
   'pending',
   'reviewed',

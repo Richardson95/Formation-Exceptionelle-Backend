@@ -28,7 +28,7 @@ const orderSchema = new mongoose.Schema(
     subtotal: { type: Number, default: 0 },
     savings: { type: Number, default: 0 },
     total: { type: Number, default: 0 },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'NGN' },
     paymentMethod: { type: String, enum: PAYMENT_METHODS, default: 'card' },
     paymentProvider: { type: String, default: '' },
     providerReference: { type: String, index: true },

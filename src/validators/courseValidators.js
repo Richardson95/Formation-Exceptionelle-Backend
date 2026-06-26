@@ -35,7 +35,7 @@ export const createCourseSchema = z.object({
   language: z.enum(COURSE_LANGUAGES).optional().default('English'),
   price: z.number().min(0).optional().default(0),
   originalPrice: z.number().min(0).optional().default(0),
-  currency: z.string().optional().default('USD'),
+  currency: z.string().optional().default('NGN'),
   thumbnail: z.string().optional().default(''),
   previewVideo: z.string().optional().default(''),
   duration: z.string().optional().default(''),

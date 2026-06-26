@@ -87,7 +87,7 @@ try {
   check('GET /courses/featured', Array.isArray(featured.json) && featured.json.every((c) => c.featured && c.status === 'published'));
 
   const detail = await req('GET', '/courses/c001', { token: userToken });
-  check('GET /courses/:id', detail.status === 200 && detail.json.id === 'c001' && detail.json.price === 320);
+  check('GET /courses/:id', detail.status === 200 && detail.json.id === 'c001' && detail.json.price === 35000);
 
   // Enroll free
   const enroll = await req('POST', '/enrollments', { token: userToken, body: { courseId: 'cfree' } });
@@ -107,9 +107,9 @@ try {
   const review = await req('POST', '/courses/cfree/reviews', { token: userToken, body: { rating: 5, comment: 'Great!' } });
   check('create review (enrolled)', review.status === 201 && review.json.rating === 5);
 
-  // Payment flow (mock) for paid course c001 ($320)
+  // Payment flow (mock) for paid course c001 (₦35,000)
   const payInit = await req('POST', '/payments/initialize', { token: userToken, body: { items: ['c001'], paymentMethod: 'card', billing: { firstName: 'Sam', lastName: 'Test', email: 'sam@test.com', country: 'Nigeria' } } });
-  check('payment initialize ($320)', payInit.status === 201 && payInit.json.reference && payInit.json.total === 320, JSON.stringify(payInit.json));
+  check('payment initialize (₦35,000)', payInit.status === 201 && payInit.json.reference && payInit.json.total === 35000, JSON.stringify(payInit.json));
   const payVerify = await req('POST', '/payments/verify', { token: userToken, body: { reference: payInit.json.reference } });
   check('payment verify enrolls', payVerify.status === 200 && payVerify.json.success);
   const checkEnroll = await req('GET', '/enrollments/check?courseId=c001', { token: userToken });
@@ -215,7 +215,7 @@ try {
   // Admin stats incl. moderation counts
   const stats = await req('GET', '/admin/stats', { token: adminToken });
   check('admin stats shape + pending counts', stats.status === 200 && stats.json.totalUsers >= 3 && 'pendingApprovals' in stats.json && 'pendingCourses' in stats.json && stats.json.revenueByMonth.length === 12);
-  check('admin stats revenue reflects paid order', stats.json.totalRevenue === 320, `rev=${stats.json.totalRevenue}`);
+  check('admin stats revenue reflects paid order', stats.json.totalRevenue === 35000, `rev=${stats.json.totalRevenue}`);
 
   // Admin protection + error codes
   const forbidden = await req('GET', '/admin/stats', { token: userToken });
@@ -231,7 +231,7 @@ try {
 
   // Admin payments shape (summary + transactions, paid->completed)
   const payments = await req('GET', '/admin/payments', { token: adminToken });
-  check('admin payments {summary,transactions}', payments.status === 200 && payments.json.summary && Array.isArray(payments.json.transactions) && payments.json.transactions[0]?.status === 'completed' && payments.json.summary.totalRevenue === 320);
+  check('admin payments {summary,transactions}', payments.status === 200 && payments.json.summary && Array.isArray(payments.json.transactions) && payments.json.transactions[0]?.status === 'completed' && payments.json.summary.totalRevenue === 35000);
 
   // CSV export
   const csv = await req('GET', '/admin/payments/export', { token: adminToken });

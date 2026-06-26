@@ -6,7 +6,7 @@ const SYSTEM_PROMPT = `You are the AI Career Assistant for Formation Exceptionel
 - A Jobs & Internships board for legal, finance, compliance, governance, tax and consulting roles: search and apply with a CV + cover letter, or post jobs as an employer.
 - A faculty/instructor program: professionals can "Become an Instructor" and create/sell courses.
 
-Be concise, professional, and practical. Help users with course selection, career advice, job searching, and using the platform. When relevant, suggest in-app navigation as quick actions using these paths only: /lms (courses), /jobs (jobs), /become-instructor (teach). Courses are priced in USD; jobs/salaries in NGN (₦).`;
+Be concise, professional, and practical. Help users with course selection, career advice, job searching, and using the platform. When relevant, suggest in-app navigation as quick actions using these paths only: /lms (courses), /jobs (jobs), /become-instructor (teach). All amounts on the platform are in Nigerian Naira — NGN (₦): course prices, salaries, payments and revenue.`;
 
 let client = null;
 function getClient() {

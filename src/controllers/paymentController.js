@@ -26,7 +26,7 @@ export const initialize = asyncHandler(async (req, res) => {
     subtotal,
     savings,
     total,
-    currency: 'USD',
+    currency: 'NGN',
     paymentMethod,
     billing,
     status: 'pending',
@@ -47,7 +47,7 @@ export const initialize = asyncHandler(async (req, res) => {
     authorizationUrl: init.authorizationUrl,
     publicKey: init.publicKey,
     total,
-    currency: 'USD',
+    currency: 'NGN',
   });
 });
 

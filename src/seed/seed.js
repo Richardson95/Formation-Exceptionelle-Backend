@@ -109,7 +109,7 @@ async function seedOrders() {
       subtotal,
       savings: 0,
       total: data.total,
-      currency: 'USD',
+      currency: 'NGN',
       paymentMethod: 'card',
       paymentProvider: 'demo',
       providerReference: `demo-${data.userId}`,

@@ -55,7 +55,10 @@ products in one app:
 Plus supporting features: a marketing **landing page**, **authentication**, a **"Become an
 Instructor"** flow, and a floating **AI career assistant chatbot**.
 
-Currency note: courses are priced in **USD**, jobs/salaries in **NGN (₦)**.
+Currency note: **all amounts across the platform are in Nigerian Naira — NGN (₦)**: course
+prices, salaries, payments, orders and revenue. **USD/`$` is no longer used anywhere** — render
+every amount with a `₦` prefix and `toLocaleString()` (whole naira, no cents). Course prices in
+the seed data are realistic naira (₦18,000–₦40,000; strike-through originals ₦28,000–₦58,000).
 
 ---
 
@@ -104,6 +107,10 @@ src/
     ├── layout/ AppHeader.vue, AppFooter.vue
     ├── landing/ Hero, Services, Faculty, FeatureCards, FeaturedCourses, Stats,
     │            Testimonials, Contact, Corporate, Clients (sections)
+    │            # Faculty = a moving (marquee) showcase of REAL partners/general-counsel/industry
+    │            #   leaders (name, role, firm, photo from /public) — NOT mock instructors, NO API.
+    │            # Clients = "Who We've Worked With" marquee of real partner-company logos.
+    │            # Both are static marketing content — no backend/data contract.
     ├── lms/ CourseCard.vue, QuizComponent.vue, VideoUploader.vue
     ├── jobs/ JobCard.vue
     ├── admin/ AdminLayout.vue
@@ -234,9 +241,9 @@ Course {
   subcategory: string,
   level: 'Beginner' | 'Intermediate' | 'Advanced' | 'All Levels',
   language: string,             // 'English' | 'French' | 'Yoruba' | 'Hausa' | 'Igbo'
-  price: number,                // USD; 0 if free
-  originalPrice: number,        // USD strike-through price
-  currency: string,             // 'USD'
+  price: number,                // NGN; 0 if free
+  originalPrice: number,        // NGN strike-through price
+  currency: string,             // 'NGN'
   thumbnail: string,            // image URL (or data URL in mock)
   previewVideo: string,         // video URL
   rating: number,               // avg, 0 until reviewed
@@ -402,8 +409,8 @@ Order {
   items: [{ courseId: string, title: string, price: number }],
   subtotal: number,
   savings: number,
-  total: number,                // USD
-  currency: string,             // 'USD'
+  total: number,                // NGN
+  currency: string,             // 'NGN'
   paymentMethod: 'card' | 'paypal' | 'bank',
   paymentProvider: string,      // 'paystack' | 'stripe' | ...
   providerReference: string,    // gateway transaction ref
@@ -687,7 +694,7 @@ Powers AdminDashboardView. No body. See §13.6 for the canonical shape — repea
   "totalParticipants": 1377,
   "totalCourses": 6,
   "totalEnrollments": 4820,
-  "totalRevenue": 124580.50,
+  "totalRevenue": 12458000,
   "paidStudents": 1284,
   "totalJobs": 5,
   "totalApplications": 508,
@@ -700,8 +707,8 @@ Powers AdminDashboardView. No body. See §13.6 for the canonical shape — repea
   "conversionRate": 3.2,
   "avgCourseRating": 4.7,
   "revenueByMonth": [
-    { "month": "Jan", "revenue": 23000 }, { "month": "Feb", "revenue": 26000 }
-    /* ...12 entries total, Jan..Dec */
+    { "month": "Jan", "revenue": 2300000 }, { "month": "Feb", "revenue": 2600000 }
+    /* ...12 entries total, Jan..Dec — values in NGN */
   ],
   "enrollmentsByMonth": [
     { "month": "Jan", "count": 230 }, { "month": "Feb", "count": 260 }
@@ -709,13 +716,13 @@ Powers AdminDashboardView. No body. See §13.6 for the canonical shape — repea
   ],
   "topCourses": [
     { "id": "c001", "title": "Financing, M&A and ADR: Advanced Practice", "enrolledCount": 4200,
-      "rating": 4.9, "price": 320, "thumbnail": "https://..." }
+      "rating": 4.9, "price": 35000, "thumbnail": "https://..." }
     /* top 5 by enrolledCount; full course objects are also acceptable */
   ],
   "recentActivity": [
     { "id": 1, "type": "enrollment", "message": "New participant enrolled in Company Secretarial Practice",
       "time": "2 minutes ago", "icon": "book" },
-    { "id": 4, "type": "payment", "message": "Payment of $280 received for Capital Market course",
+    { "id": 4, "type": "payment", "message": "Payment of ₦30,000 received for Capital Market course",
       "time": "1 hour ago", "icon": "currency" }
   ]
 }
@@ -806,7 +813,7 @@ status badge per course.
     "title": "Financing, M&A and ADR: Advanced Practice, Procedure & Negotiation",
     "instructor": { "id": "inst-001", "name": "Barr. (Mrs.) Adaeze Okafor, SAN" },
     "category": "Dispute Resolution",
-    "price": 320,
+    "price": 35000,
     "enrolledCount": 4200,
     "rating": 4.9,
     "status": "published",
@@ -841,10 +848,10 @@ free/paid status — so this endpoint MUST accept pricing fields, not just statu
 
 **Request body** (any subset):
 ```json
-{ "isPaid": true, "price": 320, "originalPrice": 480, "featured": true, "status": "published" }
+{ "isPaid": true, "price": 35000, "originalPrice": 52000, "featured": true, "status": "published" }
 ```
 - `isPaid` boolean — when `false`, the backend should force `price` and `originalPrice` to `0`.
-- `price` number ≥ 0 (USD). The amount students pay.
+- `price` number ≥ 0 (NGN). The amount students pay.
 - `originalPrice` number ≥ `price` (the strike-through reference price).
 - `featured` boolean (controls landing-page carousels).
 - `status` ∈ `draft|published`.
@@ -949,10 +956,10 @@ Powers AdminPaymentsView (summary cards + transactions table). Derive from the `
 ```json
 {
   "summary": {
-    "totalRevenue": 124580.00,
+    "totalRevenue": 12458000,
     "paidStudents": 1284,
-    "avgOrderValue": 76.40,
-    "thisMonth": 58200.00
+    "avgOrderValue": 31500,
+    "thisMonth": 5820000
   },
   "transactions": [
     {
@@ -960,7 +967,7 @@ Powers AdminPaymentsView (summary cards + transactions table). Derive from the `
       "student": "Chioma Eze",
       "email": "chioma@email.com",
       "course": "Financing, M&A and ADR: Advanced Practice",
-      "amount": "320",
+      "amount": "35000",
       "date": "2026-06-14",
       "status": "completed"
     }
@@ -969,7 +976,8 @@ Powers AdminPaymentsView (summary cards + transactions table). Derive from the `
 ```
 - **`status` mapping:** the Order model uses `paid|pending|failed|refunded`; the table expects
   `completed|pending|refunded`. Map `paid → completed` (and either omit `failed` or surface it as `refunded`/
-  a new badge). `amount` is rendered with a `$` prefix as a string. `course` is the first/primary item title
+  a new badge). `amount` is rendered with a `₦` prefix (the frontend formats it with `toLocaleString()`).
+  `course` is the first/primary item title
   (an order may contain multiple items — show the first or a "+N more").
 - If you keep it simple, returning just `transactions` (array) is acceptable since the current UI hardcodes
   the summary cards — but returning `summary` lets you make those cards real.
@@ -1013,7 +1021,7 @@ Powers AdminAnalyticsView charts. Return precomputed series matching what the vi
     "pageViews":      { "value": 48239, "change": 18 },
     "uniqueVisitors": { "value": 12847, "change": 12 },
     "newEnrollments": { "value": 1284,  "change": 23 },
-    "revenueMTD":     { "value": 58200, "change": 15 }
+    "revenueMTD":     { "value": 5820000, "change": 15 }
   },
   "enrollmentTrend": [
     { "month": "Jan", "count": 120 }, { "month": "Feb", "count": 180 }
@@ -1136,7 +1144,7 @@ VideoAsset {
   details shown).
 - On "Complete Purchase": currently fakes a 2s delay, then enrolls the user in **every cart course**,
   clears the cart, shows success ("A confirmation email has been sent to …").
-- Prices are **USD**. `subtotal`, `savings` (= Σ originalPrice − price), `total`.
+- Prices are **NGN (₦)**. `subtotal`, `savings` (= Σ originalPrice − price), `total`.
 
 ### Backend to build
 1. `POST /api/payments/initialize` — `{ items:[courseId...], paymentMethod, billing }` → creates a
@@ -1151,8 +1159,8 @@ VideoAsset {
    (`PATCH /api/admin/payments/:id` → `paid`).
 
 > **Recommendation:** Use **Paystack** as the primary gateway (best for NGN + cards + bank in Nigeria).
-> Add Stripe if international cards are needed. Convert USD↔NGN if charging in NGN, or charge USD directly.
-> **Never** trust the client's price — recompute totals server-side from the course records.
+> The platform currency is **NGN** — charge in naira directly. Add Stripe only if international cards are
+> needed. **Never** trust the client's price — recompute totals server-side from the course records.
 
 ### AdminPayments view
 Expects a list of transactions/orders with amounts, methods, statuses, dates. Back it with the `orders` collection.
@@ -1453,7 +1461,7 @@ Strategic Leadership & Corporate Governance; Navigating Law & Digital Innovation
 Protection); Capital Market: Corporate Financing, Regulations & Compliance; Project Structuring &
 Financing with ESG Integration; Mergers & Acquisitions: Regulations & Risk; Due Diligence & Contractual
 Risk Management; The New Tax Laws. They include full nested sections/lectures with sample video URLs
-(Google sample bucket) — keep them for a populated demo. Prices are in USD ($180–$360).
+(Google sample bucket) — keep them for a populated demo. Prices are in **NGN (₦18,000–₦40,000)**.
 
 **Demo jobs (5):** Port `MOCK_JOBS` from `src/stores/jobs.js` (ids `j001`–`j005`):
 Corporate/Commercial Lawyer, Legal & Compliance Intern, Company Secretary/Governance Officer,
@@ -1523,6 +1531,7 @@ JOB_LOCATION_TYPES  = ['Remote','On-site','Hybrid']
 JOB_LEVELS          = ['Entry','Mid-level','Senior','Manager']
 JOB_SORTS           = ['newest','popular','salary-high']
 SALARY_PERIODS      = ['monthly','yearly','hourly']
+CURRENCY            = 'NGN'   // the ONLY currency — courses, salaries, orders, revenue (render as ₦)
 APPLICATION_STATUS  = ['pending','reviewed','shortlisted','rejected','accepted']
 APPLICATION_EXPERIENCE = ['Less than 1 year','1-2 years','3-5 years','5-10 years','10+ years']
 PAYMENT_METHODS     = ['card','paypal','bank']

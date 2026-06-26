@@ -80,7 +80,7 @@ export const stats = asyncHandler(async (req, res) => {
   const activity = [
     ...recentEnroll.map((e) => ({ at: e.enrolledAt, type: 'enrollment', icon: 'book', message: 'New course enrollment' })),
     ...recentApps.map((a) => ({ at: a.appliedAt, type: 'application', icon: 'document', message: `New application from ${a.fullName}` })),
-    ...recentOrders.map((o) => ({ at: o.paidAt, type: 'payment', icon: 'currency', message: `Payment of $${o.total} received` })),
+    ...recentOrders.map((o) => ({ at: o.paidAt, type: 'payment', icon: 'currency', message: `Payment of ₦${(o.total || 0).toLocaleString()} received` })),
     ...recentUsers.map((u) => ({ at: u.createdAt, type: 'user', icon: 'user', message: `${u.firstName} ${u.lastName} joined` })),
     ...recentCerts.map((c) => ({ at: c.issuedAt, type: 'certificate', icon: 'badge', message: `Certificate issued: ${c.courseTitle}` })),
     ...recentReviews.map((r) => ({ at: r.createdAt, type: 'review', icon: 'star', message: `New ${r.rating}★ review` })),
