@@ -19,10 +19,3 @@ export const authLimiter = rateLimit({
   max: 50,
   ...common,
 });
-
-// AI assistant limiter.
-export const aiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 20,
-  ...common,
-});

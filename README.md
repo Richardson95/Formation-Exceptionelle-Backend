@@ -15,12 +15,14 @@ frontend can switch off mock mode by setting `VITE_API_BASE_URL` — see
 - **Security:** helmet, cors, express-rate-limit, express-mongo-sanitize
 - **Uploads:** Multer (local disk fallback; pluggable to Mux/S3/Cloudinary)
 - **Email:** Nodemailer (console transport in dev)
-- **AI assistant:** Anthropic Claude (`@anthropic-ai/sdk`) with a canned fallback
 - **PDF:** pdfkit (certificates)
 
-External providers (video, payments, email, AI) **degrade gracefully** when their keys are
-absent: `VIDEO_PROVIDER=mock`, `PAYMENT_PROVIDER=mock`, `MAIL_TRANSPORT=console`, and the AI
-assistant uses keyword-based canned replies. This lets the whole app run with zero credentials.
+> The floating in-app "career assistant" chatbot has been replaced by a WhatsApp contact
+> button on the frontend, so there is no chat/LLM endpoint in this API.
+
+External providers (video, payments, email) **degrade gracefully** when their keys are
+absent: `VIDEO_PROVIDER=mock`, `PAYMENT_PROVIDER=mock`, and `MAIL_TRANSPORT=console`. This
+lets the whole app run with zero credentials.
 
 ## Quick start
 
@@ -75,7 +77,7 @@ src/
 ├── validators/          # Zod request schemas
 ├── controllers/         # route handlers
 ├── routes/              # one router per resource, aggregated in routes/index.js
-├── services/            # videoProvider, paymentProvider, mailer, ai, certificatePdf, enrollmentService
+├── services/            # videoProvider, paymentProvider, mailer, certificatePdf, enrollmentService
 ├── utils/               # jwt, asyncHandler, ApiError, relativeTime
 └── seed/                # seed.js + demo courses/jobs
 ```
@@ -94,7 +96,6 @@ src/
 | Payments | `/payments` | initialize, verify, webhook/:provider |
 | Certificates | `/certificates` | generate, my (`/me`), verify `/:id` |
 | Quizzes | `/quizzes` | get by course/lecture, submit |
-| Assistant | `/assistant` | Claude-backed chat with fallback |
 | Uploads | `/uploads` | image |
 | Contact | `/contact` | landing-page lead |
 | Admin | `/admin` | stats, users/courses/jobs/payments management, analytics |
@@ -107,7 +108,6 @@ Fill in the real provider calls (marked `TODO`) in:
 - `services/videoProvider.js` — Mux / Cloudflare Stream / S3
 - `services/paymentProvider.js` — Paystack / Stripe (+ webhook verification)
 - `services/mailer.js` — set `MAIL_TRANSPORT=smtp` and SMTP creds (or Resend)
-- `services/ai.js` — set `ANTHROPIC_API_KEY`
 
 Also: move uploads to cloud storage, set a strong `JWT_SECRET`, restrict `CLIENT_ORIGIN`,
 and run behind PM2 or Docker.

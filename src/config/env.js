@@ -51,10 +51,6 @@ const env = {
     'Formation Exceptionelle <no-reply@formationexceptionelle.com>',
   RESEND_API_KEY: process.env.RESEND_API_KEY || '',
 
-  // AI
-  ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY || '',
-  AI_MODEL: process.env.AI_MODEL || 'claude-haiku-4-5',
-
   // Uploads
   UPLOAD_DIR: process.env.UPLOAD_DIR || 'uploads',
   MAX_VIDEO_MB: num(process.env.MAX_VIDEO_MB, 512),

@@ -28,7 +28,7 @@
 8. [Video Upload & Streaming Architecture](#8-video-upload--streaming-architecture)
 9. [Payments & Checkout](#9-payments--checkout)
 10. [Certificates](#10-certificates)
-11. [AI Career Assistant](#11-ai-career-assistant)
+11. [Contact — WhatsApp Button](#11-contact--whatsapp-button)
 12. [Email / Notifications](#12-email--notifications)
 13. [Frontend Integration Contract](#13-frontend-integration-contract)
 14. [Recommended Project Structure](#14-recommended-project-structure)
@@ -53,7 +53,7 @@ products in one app:
 3. **Admin panel** — manage users, courses, jobs, payments, and view analytics.
 
 Plus supporting features: a marketing **landing page**, **authentication**, a **"Become an
-Instructor"** flow, and a floating **AI career assistant chatbot**.
+Instructor"** flow, and a floating **WhatsApp contact button**.
 
 Currency note: **all amounts across the platform are in Nigerian Naira — NGN (₦)**: course
 prices, salaries, payments, orders and revenue. **USD/`$` is no longer used anywhere** — render
@@ -114,7 +114,7 @@ src/
     ├── lms/ CourseCard.vue, QuizComponent.vue, VideoUploader.vue
     ├── jobs/ JobCard.vue
     ├── admin/ AdminLayout.vue
-    └── ai/ AIAssistant.vue
+    └── ai/ WhatsAppButton.vue   # floating WhatsApp contact button (static wa.me link, no backend)
 ```
 
 **How the mock currently works (what you are replacing):**
@@ -143,7 +143,6 @@ The user requested **Node.js + Express**. Here is the full recommended stack:
 | Image upload (thumbnails, avatars, logos, CVs) | **Cloudinary** *or* **AWS S3** | Thumbnails/avatars/CVs. |
 | Payments | **Paystack** (primary, NGN-friendly) and/or **Stripe** | Frontend checkout supports Card, PayPal, Bank Transfer. Paystack covers card+bank for Nigeria. |
 | Email | **Nodemailer** (SMTP) or **Resend** / **SendGrid** | Welcome, enrollment, application, certificate, password-reset emails. |
-| AI chatbot | **Anthropic Claude API** (`@anthropic-ai/sdk`) | Replace the canned chatbot with a real LLM (see §11). Use the latest model, e.g. `claude-opus-4-8` or a cheaper `claude-haiku-4-5` for chat. |
 | Security middleware | **helmet**, **cors**, **express-rate-limit**, **express-mongo-sanitize** | Standard hardening. |
 | Logging | **morgan** (dev) + **pino**/**winston** (prod) | |
 | Config | **dotenv** | |
@@ -449,11 +448,9 @@ PasswordResetToken {
 }
 ```
 
-### 5.11 ChatMessage / Conversation (optional — for AI assistant persistence)
-```js
-Conversation { id, userId, messages: [{ role: 'user'|'assistant', content, createdAt }], createdAt }
-```
-Persisting chat is optional; a stateless endpoint is acceptable (see §11).
+### 5.11 ChatMessage / Conversation — removed
+The in-app AI chat assistant was replaced by a WhatsApp contact button (see §11), so there is
+no conversation model or chat persistence in this API.
 
 ---
 
@@ -515,7 +512,7 @@ Pages and behaviour you must support:
 (hash the token, never store it in plaintext). Or store the hash on the user document. Clean up expired tokens.
 
 **Email:** send via the mailer service (§12) using a branded HTML template with the reset link button.
-When `ANTHROPIC`/SMTP isn't configured in dev, log the link to the console so devs can test (mirrors the
+When SMTP isn't configured in dev, log the link to the console so devs can test (mirrors the
 frontend "Demo Mode" link surfacing).
 
 > **Frontend swap note:** When you wire the real API, update `auth.js`:
@@ -1184,27 +1181,18 @@ Backend:
 
 ---
 
-## 11. AI Career Assistant
+## 11. Contact — WhatsApp Button
 
-From `components/ai/AIAssistant.vue`: a floating chat widget. Currently uses **hardcoded keyword
-matching** (courses/jobs/instructor/lms/default) with canned replies + quick-action buttons that route
-within the app.
+The previous in-app AI chat widget has been **replaced by a floating WhatsApp contact button**
+(`components/ai/WhatsAppButton.vue`). It is a static `https://wa.me/<number>?text=...` deep link
+that opens WhatsApp in a new tab.
 
-**Backend upgrade (recommended):**
-- `POST /api/assistant/chat` — `{ messages: [{role, content}], context? }` →
-  `{ reply: string, quickActions?: [{ label, path }] }`.
-- Implement with the **Anthropic Claude API** (`@anthropic-ai/sdk`). Use a system prompt describing
-  Formation Exceptionelle (a professional corporate/legal/finance training & career platform: expert-led
-  programmes in corporate law, finance & capital markets, M&A, governance, tax, energy/ESG and dispute
-  resolution; a jobs board; an instructor/faculty program; certificates; payments) and instruct the model
-  to optionally suggest in-app navigation (`/lms`, `/jobs`, `/become-instructor`) as quick actions.
-- Recommended model: **`claude-haiku-4-5`** for low-latency/cheap chat, or **`claude-opus-4-8`** for
-  best quality. Stream tokens if you want the typing effect.
-- Optionally ground answers with real data (call your own courses/jobs endpoints, or use tool-use) so it
-  can answer "what M&A or tax courses do you have?" accurately.
-- Keep the existing canned responses as a **fallback** when the API key is missing.
+**No backend involvement:** there is no chat/LLM endpoint, no conversation persistence, and no
+AI provider dependency. The WhatsApp number and prefilled greeting are configured in the frontend
+component.
 
-> If you keep it simple for v1, a stateless endpoint that proxies Claude with a good system prompt is enough.
+> If a server-rendered or configurable WhatsApp number is ever needed, expose it via the existing
+> public config/contact surface rather than reintroducing a chat endpoint.
 
 ---
 
@@ -1355,7 +1343,6 @@ backend/
 │   │   ├── videoController.js
 │   │   ├── paymentController.js
 │   │   ├── certificateController.js
-│   │   ├── assistantController.js
 │   │   └── adminController.js
 │   ├── routes/
 │   │   └── *.routes.js           # one per resource, mounted under /api
@@ -1363,8 +1350,7 @@ backend/
 │   │   ├── videoProvider.js      # Mux/Cloudflare/S3 abstraction
 │   │   ├── paymentProvider.js    # Paystack/Stripe abstraction
 │   │   ├── mailer.js
-│   │   ├── certificatePdf.js
-│   │   └── ai.js                 # Anthropic Claude client
+│   │   └── certificatePdf.js
 │   ├── utils/
 │   │   ├── jwt.js
 │   │   ├── asyncHandler.js
@@ -1426,10 +1412,6 @@ SMTP_USER=
 SMTP_PASS=
 MAIL_FROM="Formation Exceptionelle <no-reply@formationexceptionelle.com>"
 # (or RESEND_API_KEY=)
-
-# AI assistant
-ANTHROPIC_API_KEY=
-AI_MODEL=claude-haiku-4-5
 ```
 
 **Frontend `.env.local` (already documented in repo `.env.example`):**
@@ -1511,9 +1493,8 @@ Tax Manager, Investment/Capital Markets Analyst Intern.
 8. **Payments**: Paystack init/verify/webhook, Order model, paid-course fulfillment → enrollments + email.
 9. **Certificates**: generate + PDF + verify.
 10. **Admin**: stats aggregation, user/course/job management, payments list, analytics.
-11. **AI assistant**: Claude-backed `/api/assistant/chat` with fallback.
-12. **Email/notifications**, contact form, password reset.
-13. **Hardening**: validation, rate limiting, indexes, tests, OpenAPI docs, deployment (Docker/PM2).
+11. **Email/notifications**, contact form, password reset.
+12. **Hardening**: validation, rate limiting, indexes, tests, OpenAPI docs, deployment (Docker/PM2).
 
 ---
 

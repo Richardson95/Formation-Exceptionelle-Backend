@@ -204,10 +204,6 @@ try {
   const adminJobsList = await req('GET', '/admin/jobs', { token: adminToken });
   check('admin jobs list carries applicantCount', adminJobsList.json.find((j) => j.id === 'j001')?.applicantCount === 1);
 
-  // AI assistant fallback
-  const ai = await req('POST', '/assistant/chat', { body: { messages: [{ role: 'user', content: 'what M&A courses do you have?' }] } });
-  check('AI assistant fallback reply', ai.status === 200 && ai.json.reply && Array.isArray(ai.json.quickActions));
-
   // Contact
   const contact = await req('POST', '/contact', { body: { name: 'Lead', email: 'lead@test.com', message: 'Hi there' } });
   check('contact form', contact.status === 201 && contact.json.success);
