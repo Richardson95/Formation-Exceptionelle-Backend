@@ -46,11 +46,32 @@ export function ctaButton(label, url) {
   return `<a href="${url}" style="display:inline-block;background:${BRAND.gold};color:#1f2937;font-weight:700;text-decoration:none;padding:12px 24px;border-radius:8px;margin:12px 0;">${label}</a>`;
 }
 
+/** Send via the Resend HTTP API. */
+async function sendViaResend({ to, subject, html, text }) {
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ from: env.MAIL_FROM, to, subject, html, text }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    throw new Error(`Resend request failed (${res.status}): ${body}`);
+  }
+  return { delivered: true, transport: 'resend' };
+}
+
 /**
- * Send an email. Falls back to console logging when no transport is configured
- * (dev "demo mode") so flows remain testable without an SMTP server.
+ * Send an email. Order of preference: Resend (if configured) → SMTP (if
+ * configured) → console logging ("demo mode") so flows stay testable without
+ * any mail provider.
  */
 export async function sendMail({ to, subject, html, text }) {
+  if (env.resendEnabled) {
+    return sendViaResend({ to, subject, html, text });
+  }
   const t = getTransporter();
   if (!t) {
     // eslint-disable-next-line no-console

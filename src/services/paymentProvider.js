@@ -6,22 +6,60 @@ import env from '../config/env.js';
  *
  * - `mock` (default): no gateway calls. `initialize` returns a fake authorization
  *   URL + reference; `verify` always succeeds. Lets the full checkout → enrollment
- *   flow be exercised end-to-end without credentials.
- * - `paystack`: real calls (TODO — fill in fetch to https://api.paystack.co).
- * - `stripe`: PaymentIntent flow (TODO).
+ *   flow run end-to-end without credentials.
+ * - `paystack`: real calls to https://api.paystack.co. Activates only when
+ *   PAYMENT_PROVIDER=paystack and PAYSTACK_SECRET_KEY is set (env.paystackEnabled).
+ *
+ * Amounts are NGN; Paystack works in kobo, so we multiply/divide by 100.
  */
 
+const PAYSTACK_BASE = 'https://api.paystack.co';
 const newRef = () => `FE_${Date.now()}_${crypto.randomBytes(6).toString('hex')}`;
 
-export async function initializePayment({ order, email }) {
-  const provider = env.PAYMENT_PROVIDER;
+async function paystack(path, { method = 'GET', body } = {}) {
+  const res = await fetch(`${PAYSTACK_BASE}${path}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${env.PAYSTACK_SECRET_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.status === false) {
+    const msg = json.message || `Paystack request failed (${res.status})`;
+    const err = new Error(msg);
+    err.providerResponse = json;
+    throw err;
+  }
+  return json;
+}
 
-  if (provider === 'paystack' && env.PAYSTACK_SECRET_KEY) {
-    // TODO: POST https://api.paystack.co/transaction/initialize
-    //   body: { email, amount: order.total * 100 (kobo/cents), reference, callback_url }
-    //   return { authorizationUrl: data.authorization_url, reference: data.reference }
+export async function initializePayment({ order, email }) {
+  if (env.paystackEnabled) {
+    const reference = newRef();
+    const callback = env.PAYSTACK_CALLBACK_URL || `${env.CLIENT_ORIGIN}/lms/checkout`;
+    const data = await paystack('/transaction/initialize', {
+      method: 'POST',
+      body: {
+        email,
+        amount: Math.round(order.total * 100), // NGN -> kobo
+        currency: 'NGN',
+        reference,
+        callback_url: callback,
+        metadata: { orderId: order.id, userId: String(order.userId) },
+      },
+    });
+    return {
+      provider: 'paystack',
+      reference: data.data.reference,
+      authorizationUrl: data.data.authorization_url,
+      accessCode: data.data.access_code,
+      publicKey: env.PAYSTACK_PUBLIC_KEY,
+    };
   }
 
+  // Mock
   const reference = newRef();
   return {
     provider: 'mock',
@@ -32,15 +70,35 @@ export async function initializePayment({ order, email }) {
 }
 
 export async function verifyPayment({ reference }) {
-  const provider = env.PAYMENT_PROVIDER;
-
-  if (provider === 'paystack' && env.PAYSTACK_SECRET_KEY) {
-    // TODO: GET https://api.paystack.co/transaction/verify/:reference
-    //   return { success: data.status === 'success', amount: data.amount / 100, reference }
+  if (env.paystackEnabled) {
+    const data = await paystack(`/transaction/verify/${encodeURIComponent(reference)}`);
+    const tx = data.data || {};
+    return {
+      provider: 'paystack',
+      success: tx.status === 'success',
+      amount: typeof tx.amount === 'number' ? tx.amount / 100 : undefined,
+      reference: tx.reference || reference,
+      raw: tx,
+    };
   }
 
   // Mock: treat every reference as paid.
   return { success: true, reference, provider: 'mock' };
+}
+
+/** Issue a refund (admin panel). Mock just succeeds. */
+export async function refundPayment({ reference, amount }) {
+  if (env.paystackEnabled) {
+    const data = await paystack('/refund', {
+      method: 'POST',
+      body: {
+        transaction: reference,
+        ...(amount ? { amount: Math.round(amount * 100) } : {}),
+      },
+    });
+    return { provider: 'paystack', success: true, raw: data.data };
+  }
+  return { provider: 'mock', success: true };
 }
 
 /** Verify a webhook signature (provider-specific). Mock always trusts. */

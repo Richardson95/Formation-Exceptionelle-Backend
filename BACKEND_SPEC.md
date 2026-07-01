@@ -505,7 +505,7 @@ Pages and behaviour you must support:
 | Method | Path | Auth | Body | Behaviour |
 |---|---|---|---|---|
 | POST | `/api/auth/forgot-password` | public | `{ email }` | If a user with that email exists: create a single-use reset token (random, hashed at rest), set ~30-min expiry, **email** the user a link `${CLIENT_ORIGIN}/auth/reset-password?token=<token>`. **Always** return the same neutral `{ success: true }` response (don't reveal whether the email is registered). Rate-limit this endpoint. |
-| GET | `/api/auth/reset-password/verify?token=` | public | — | `{ valid: boolean, reason?: 'invalid'\|'expired' }`. Lets the reset page show the invalid/expired state before the user types a password. |
+| GET | `/api/auth/verify-reset-token?token=` | public | — | `{ valid: boolean, reason?: 'invalid'\|'expired' }`. Lets the reset page show the invalid/expired state before the user types a password. |
 | POST | `/api/auth/reset-password` | public | `{ token, password }` | Validate token (exists, not expired, not used). Enforce password ≥ 8 chars. Hash & save new password. **Invalidate the token** (single use). Optionally invalidate existing sessions. Return `{ success: true }`. |
 
 **Token storage (backend):** store a `PasswordResetToken` record — `{ userId, tokenHash, expiresAt, usedAt }`
@@ -517,7 +517,7 @@ frontend "Demo Mode" link surfacing).
 
 > **Frontend swap note:** When you wire the real API, update `auth.js`:
 > `forgotPassword` → `POST /auth/forgot-password` (drop the returned demo `token`; remove the "Demo Mode"
-> link block in `ForgotPasswordView.vue`), `verifyResetToken` → `GET /auth/reset-password/verify`
+> link block in `ForgotPasswordView.vue`), `verifyResetToken` → `GET /auth/verify-reset-token`
 > (it becomes async — the reset page should `await` it on mount), `resetPassword` →
 > `POST /auth/reset-password`.
 
@@ -540,7 +540,7 @@ default to array to stay drop-in compatible — or update the stores accordingly
 | PATCH | `/me` | auth | partial user fields | `{ user }` |
 | POST | `/become-instructor` | auth | `{ title, experience, courseTopic, category, linkedin, bio }` | `{ user }` (role now instructor) |
 | POST | `/forgot-password` | public | `{ email }` | `{ success }` (neutral, no account enumeration; emails reset link) |
-| GET | `/reset-password/verify?token=` | public | — | `{ valid, reason? }` (validate link before showing form) |
+| GET | `/verify-reset-token?token=` | public | — | `{ valid, reason? }` (validate link before showing form) |
 | POST | `/reset-password` | public | `{ token, password }` | `{ success }` (single-use token, password ≥ 8) |
 
 ### 7.2 Courses — `/api/courses`

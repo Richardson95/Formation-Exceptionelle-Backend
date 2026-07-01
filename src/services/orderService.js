@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Enrollment from '../models/Enrollment.js';
 import { enrollUserInCourse } from './enrollmentService.js';
 import { sendEnrollmentEmail } from './mailer.js';
+import { refundPayment } from './paymentProvider.js';
 
 /**
  * Fulfill a paid order: mark paid, enroll the user in each item (idempotent),
@@ -31,6 +32,13 @@ export async function fulfillOrder(order) {
 export async function refundOrder(order) {
   if (order.status === 'refunded') return order;
   const wasPaid = order.status === 'paid';
+
+  // Best-effort gateway refund for real (paystack) orders; never block the
+  // local state change if the gateway call fails.
+  if (wasPaid && order.providerReference && order.paymentProvider === 'paystack') {
+    await refundPayment({ reference: order.providerReference, amount: order.total }).catch(() => {});
+  }
+
   order.status = 'refunded';
   await order.save();
 

@@ -13,16 +13,21 @@ frontend can switch off mock mode by setting `VITE_API_BASE_URL` — see
 - **Auth:** JWT (`jsonwebtoken`) + bcrypt
 - **Validation:** Zod
 - **Security:** helmet, cors, express-rate-limit, express-mongo-sanitize
-- **Uploads:** Multer (local disk fallback; pluggable to Mux/S3/Cloudinary)
-- **Email:** Nodemailer (console transport in dev)
+- **Payments:** Paystack (NGN) — real `initialize`/`verify`/`refund` + webhook signature check
+- **Video:** Bunny Stream — direct upload + TUS presign + adaptive HLS + status webhook
+- **File storage:** Cloudflare R2 (S3-compatible) for images, CVs, certificates — zero egress
+- **Email:** Resend (HTTP API) or SMTP; console transport in dev
 - **PDF:** pdfkit (certificates)
+- **Docs:** OpenAPI 3 at `/api/docs` (Swagger UI) + `/api/openapi.json`
 
 > The floating in-app "career assistant" chatbot has been replaced by a WhatsApp contact
 > button on the frontend, so there is no chat/LLM endpoint in this API.
 
-External providers (video, payments, email) **degrade gracefully** when their keys are
-absent: `VIDEO_PROVIDER=mock`, `PAYMENT_PROVIDER=mock`, and `MAIL_TRANSPORT=console`. This
-lets the whole app run with zero credentials.
+Every external provider is **env-gated and degrades gracefully** when its keys are absent —
+`PAYMENT_PROVIDER=mock`, `VIDEO_PROVIDER=mock`, `STORAGE_DRIVER=local`, `MAIL_TRANSPORT=console`.
+The whole app runs end-to-end with zero credentials, and each real integration switches on the
+moment you supply its keys (see `.env.example`). Jobs are **admin-posted and go live
+immediately** — there is no employer self-posting or job approval step.
 
 ## Quick start
 
@@ -77,7 +82,8 @@ src/
 ├── validators/          # Zod request schemas
 ├── controllers/         # route handlers
 ├── routes/              # one router per resource, aggregated in routes/index.js
-├── services/            # videoProvider, paymentProvider, mailer, certificatePdf, enrollmentService
+├── services/            # paymentProvider(Paystack), videoProvider(Bunny), storageProvider(R2), mailer(Resend), certificatePdf, enrollmentService, orderService
+├── docs/                # openapi.js (served at /api/docs)
 ├── utils/               # jwt, asyncHandler, ApiError, relativeTime
 └── seed/                # seed.js + demo courses/jobs
 ```
@@ -102,12 +108,38 @@ src/
 
 Errors use a consistent shape: `{ "error": { "message": "...", "code": "..." } }`.
 
+## Tests
+
+```bash
+npm run smoke      # 67-check end-to-end run (in-memory MongoDB, no setup)
+npm run test:unit  # Vitest provider unit tests
+npm test           # both (used by CI)
+```
+
 ## Going to production
 
-Fill in the real provider calls (marked `TODO`) in:
-- `services/videoProvider.js` — Mux / Cloudflare Stream / S3
-- `services/paymentProvider.js` — Paystack / Stripe (+ webhook verification)
-- `services/mailer.js` — set `MAIL_TRANSPORT=smtp` and SMTP creds (or Resend)
+All integrations are implemented and **activated purely via env vars** — no code changes
+needed. Set the driver + its keys (see `.env.example`):
 
-Also: move uploads to cloud storage, set a strong `JWT_SECRET`, restrict `CLIENT_ORIGIN`,
-and run behind PM2 or Docker.
+| Capability | Activate with | Keys |
+|---|---|---|
+| Payments (Paystack) | `PAYMENT_PROVIDER=paystack` | `PAYSTACK_SECRET_KEY`, `PAYSTACK_PUBLIC_KEY` |
+| Video (Bunny Stream) | `VIDEO_PROVIDER=bunny` | `BUNNY_STREAM_LIBRARY_ID`, `BUNNY_STREAM_API_KEY`, `BUNNY_STREAM_CDN` |
+| File storage (R2) | `STORAGE_DRIVER=r2` | `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET`, `R2_PUBLIC_URL` |
+| Email (Resend) | `MAIL_TRANSPORT=resend` | `RESEND_API_KEY`, `MAIL_FROM` |
+| Database | — | `MONGODB_URI` (MongoDB Atlas) |
+
+Also set a strong `JWT_SECRET` and restrict `CLIENT_ORIGIN` to your real frontend origin(s).
+
+**Webhooks** (set after deploy, pointing at your live API):
+- Paystack → `https://<api>/api/payments/webhook/paystack`
+- Bunny Stream → `https://<api>/api/videos/webhook/bunny`
+
+### Deploy
+
+- **Docker:** `docker compose up --build` (API + MongoDB locally), or build the image from the
+  included `Dockerfile`.
+- **Render:** the included `render.yaml` blueprint provisions the web service with a health
+  check at `/api/health`; set the secret env vars in the dashboard.
+- **CI:** `.github/workflows/ci.yml` runs the full test suite on every push/PR.
+- **Frontend:** deploy the Vue app (Vercel) and set `VITE_API_BASE_URL` to the API origin.

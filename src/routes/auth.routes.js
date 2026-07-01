@@ -34,7 +34,7 @@ router.post(
   ctrl.forgotPassword
 );
 router.get(
-  '/reset-password/verify',
+  '/verify-reset-token',
   validate({ query: verifyTokenQuerySchema }),
   ctrl.verifyResetToken
 );

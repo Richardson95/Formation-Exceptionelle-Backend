@@ -43,6 +43,7 @@ export const initialize = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     orderId: order.id,
+    provider: init.provider,
     reference: init.reference,
     authorizationUrl: init.authorizationUrl,
     publicKey: init.publicKey,

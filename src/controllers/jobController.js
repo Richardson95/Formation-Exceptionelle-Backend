@@ -104,15 +104,16 @@ export const getJob = asyncHandler(async (req, res) => {
 });
 
 export const createJob = asyncHandler(async (req, res) => {
-  // Moderation: employer-posted jobs are not public until an admin approves them (§7.5).
+  // Jobs are posted by an admin only (enforced in the route), so they go live
+  // immediately — no pending/approval step.
   const job = await Job.create({
     ...req.body,
     postedBy: req.userId,
     applications: 0,
     views: 0,
-    isActive: false,
+    isActive: true,
     isFeatured: false,
-    status: 'pending',
+    status: 'approved',
     submittedAt: new Date(),
     rejectionReason: '',
     postedAt: dateOnly(),

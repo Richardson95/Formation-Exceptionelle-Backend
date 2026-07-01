@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as ctrl from '../controllers/jobController.js';
-import { authRequired, ownerOrAdmin } from '../middleware/auth.js';
+import { authRequired, adminOnly, ownerOrAdmin } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import { createJobSchema, updateJobSchema, listJobsQuerySchema } from '../validators/jobValidators.js';
 import Job from '../models/Job.js';
@@ -16,7 +16,8 @@ router.get('/', authRequired, validate({ query: listJobsQuerySchema }), ctrl.lis
 router.get('/featured', authRequired, ctrl.featuredJobs);
 router.get('/internships', authRequired, ctrl.internships);
 router.get('/mine', authRequired, ctrl.myJobs); // employer's own postings (any status)
-router.post('/', authRequired, validate({ body: createJobSchema }), ctrl.createJob);
+// Only an admin posts jobs, and they go live immediately (no approval step).
+router.post('/', authRequired, adminOnly, validate({ body: createJobSchema }), ctrl.createJob);
 router.get('/:id', authRequired, ctrl.getJob);
 router.patch('/:id', authRequired, jobOwner, validate({ body: updateJobSchema }), ctrl.updateJob);
 router.delete('/:id', authRequired, jobOwner, ctrl.deleteJob);

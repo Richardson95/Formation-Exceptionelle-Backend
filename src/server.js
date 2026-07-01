@@ -12,6 +12,7 @@ import apiRouter from './routes/index.js';
 import { notFoundHandler, errorHandler } from './middleware/error.js';
 import { apiLimiter } from './middleware/rateLimit.js';
 import { uploadRoot } from './middleware/upload.js';
+import { buildOpenApiSpec } from './docs/openapi.js';
 
 export function createApp() {
   const app = express();
@@ -38,6 +39,22 @@ export function createApp() {
 
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', env: env.NODE_ENV, time: new Date().toISOString() });
+  });
+
+  // API documentation (OpenAPI JSON + Swagger UI from CDN — no extra dependency).
+  app.get('/api/openapi.json', (req, res) => res.json(buildOpenApiSpec()));
+  app.get('/api/docs', (req, res) => {
+    res.type('html').send(`<!doctype html><html><head>
+  <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Formation Exceptionelle API — Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"/>
+</head><body>
+  <div id="swagger"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    window.ui = SwaggerUIBundle({ url: '/api/openapi.json', dom_id: '#swagger' });
+  </script>
+</body></html>`);
   });
 
   app.use('/api', apiLimiter, apiRouter);

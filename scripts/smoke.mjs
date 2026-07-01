@@ -172,31 +172,30 @@ try {
   const priceEdit2 = await req('PATCH', `/admin/courses/${newCourseId}`, { token: adminToken, body: { isPaid: true, price: 100, originalPrice: 60 } });
   check('admin pricing edit: originalPrice clamped >= price', priceEdit2.json.price === 100 && priceEdit2.json.originalPrice === 100);
 
-  // ── Moderation: job submission ──
-  const postJob = await req('POST', '/jobs', { token: userToken, body: { title: 'Associate', company: 'Test LP', category: 'Legal', description: 'Join us', deadline: '2026-12-31' } });
-  check('post job -> pending + inactive', postJob.status === 201 && postJob.json.status === 'pending' && postJob.json.isActive === false);
+  // ── Jobs: admin-only posting, goes live immediately (no approval step) ──
+  const nonAdminPost = await req('POST', '/jobs', { token: userToken, body: { title: 'Associate', company: 'Test LP', category: 'Legal', description: 'Join us', deadline: '2026-12-31' } });
+  check('non-admin cannot post a job -> 403', nonAdminPost.status === 403);
+
+  const postJob = await req('POST', '/jobs', { token: adminToken, body: { title: 'Associate', company: 'Test LP', category: 'Legal', description: 'Join us', deadline: '2026-12-31' } });
+  check('admin posts job -> approved + active immediately', postJob.status === 201 && postJob.json.status === 'approved' && postJob.json.isActive === true);
   const newJobId = postJob.json.id;
-  const jobsBefore = await req('GET', '/jobs', { token: userToken });
-  check('pending job NOT in public list', !jobsBefore.json.some((j) => j.id === newJobId));
-  const approveJob = await req('POST', `/admin/jobs/${newJobId}/approve`, { token: adminToken });
-  check('admin approve job -> approved+active', approveJob.status === 200 && approveJob.json.status === 'approved' && approveJob.json.isActive === true);
   const jobsAfter = await req('GET', '/jobs', { token: userToken });
-  check('approved job now in public list', jobsAfter.json.some((j) => j.id === newJobId));
+  check('posted job appears in public list immediately', jobsAfter.json.some((j) => j.id === newJobId));
   const salaryEdit = await req('PATCH', `/admin/jobs/${newJobId}`, { token: adminToken, body: { salary: { min: 500000, max: 100000, currency: 'NGN', period: 'monthly' } } });
   check('admin salary edit: max clamped >= min', salaryEdit.json.salary.min === 500000 && salaryEdit.json.salary.max === 500000);
 
-  // Owner full-edit of their own listing (/jobs/edit/:id) — keeps status, no re-approval.
+  // Admin full-edit of the job (status preserved).
   const ownerEdit = await req('PATCH', `/jobs/${newJobId}`, {
-    token: userToken,
+    token: adminToken,
     body: { title: 'Senior Associate', description: 'Updated role', skills: ['Litigation', 'Drafting'], deadline: '2027-01-31', salary: { min: 600000, max: 900000, currency: 'NGN', period: 'monthly' } },
   });
-  check('owner full-edits own job, status preserved', ownerEdit.status === 200 && ownerEdit.json.title === 'Senior Associate' && ownerEdit.json.skills.includes('Litigation') && ownerEdit.json.salary.max === 900000 && ownerEdit.json.status === 'approved');
+  check('admin full-edits job, status preserved', ownerEdit.status === 200 && ownerEdit.json.title === 'Senior Associate' && ownerEdit.json.skills.includes('Litigation') && ownerEdit.json.salary.max === 900000 && ownerEdit.json.status === 'approved');
   const notOwnerEdit = await req('PATCH', '/jobs/j001', { token: userToken, body: { title: 'Hijack' } });
   check('non-owner cannot edit a job', notOwnerEdit.status === 403);
 
-  // Employer "My Job Postings" (/jobs/manage) — own jobs incl. pending, with applicant counts.
-  const mine = await req('GET', '/jobs/mine', { token: userToken });
-  check('GET /jobs/mine returns my posted job (any status)', mine.json.some((j) => j.id === newJobId) && mine.json.every((j) => typeof j.applicantCount === 'number'));
+  // Admin "My Job Postings" — own jobs with applicant counts.
+  const mine = await req('GET', '/jobs/mine', { token: adminToken });
+  check('GET /jobs/mine returns my posted job', mine.json.some((j) => j.id === newJobId) && mine.json.every((j) => typeof j.applicantCount === 'number'));
   // admin posted the seeded jobs; j001 has 1 applicant (Sam), shortlisted earlier.
   const adminMine = await req('GET', '/jobs/mine', { token: adminToken });
   const j001Mine = adminMine.json.find((j) => j.id === 'j001');

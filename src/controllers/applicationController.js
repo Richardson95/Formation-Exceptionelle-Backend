@@ -4,12 +4,20 @@ import ApiError from '../utils/ApiError.js';
 import Application from '../models/Application.js';
 import Job from '../models/Job.js';
 import User from '../models/User.js';
-import env from '../config/env.js';
+import * as storage from '../services/storageProvider.js';
 import { sendApplicationEmail, sendApplicationStatusEmail } from '../services/mailer.js';
 
-function fileUrl(req, file, subdir) {
-  // Local-storage fallback URL. Swap for a CDN URL when cloud storage is wired.
-  return `${req.protocol}://${req.get('host')}/uploads/${subdir}/${path.basename(file.path)}`;
+const baseUrl = (req) => `${req.protocol}://${req.get('host')}`;
+
+// Persist an uploaded CV (R2 when configured, else local disk) and return its URL.
+function saveCv(req, file) {
+  const filename = path.basename(file.path);
+  return storage.saveLocalFile({
+    filePath: file.path,
+    key: storage.keyFor('cvs', filename),
+    contentType: file.mimetype,
+    baseUrl: baseUrl(req),
+  });
 }
 
 export const apply = asyncHandler(async (req, res) => {
@@ -22,7 +30,7 @@ export const apply = asyncHandler(async (req, res) => {
 
   let { cvUrl, cvName } = req.body;
   if (req.file) {
-    cvUrl = fileUrl(req, req.file, 'cvs');
+    cvUrl = await saveCv(req, req.file);
     cvName = req.file.originalname;
   }
 
@@ -120,8 +128,6 @@ export const updateStatus = asyncHandler(async (req, res) => {
 
 export const uploadCv = asyncHandler(async (req, res) => {
   if (!req.file) throw ApiError.badRequest('No CV file uploaded');
-  res.status(201).json({
-    cvUrl: fileUrl(req, req.file, 'cvs'),
-    cvName: req.file.originalname,
-  });
+  const cvUrl = await saveCv(req, req.file);
+  res.status(201).json({ cvUrl, cvName: req.file.originalname });
 });

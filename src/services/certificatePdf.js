@@ -1,26 +1,23 @@
-import fs from 'fs';
-import path from 'path';
 import PDFDocument from 'pdfkit';
-import { uploadRoot } from '../middleware/upload.js';
+import * as storage from './storageProvider.js';
 
 const PURPLE = '#4c1d95';
 const PURPLE_LIGHT = '#7c3aed';
 const GOLD = '#f59e0b';
 
 /**
- * Render a certificate PDF to local storage and return its public URL.
- * Swap the write target for S3/Cloudinary in production.
+ * Render a certificate PDF and persist it (R2 when configured, else local disk).
+ * Returns its public URL.
  */
 export async function renderCertificatePdf({ certificate, baseUrl }) {
-  const dir = path.join(uploadRoot, 'certificates');
-  fs.mkdirSync(dir, { recursive: true });
   const filename = `${certificate.code}.pdf`;
-  const filePath = path.join(dir, filename);
 
-  await new Promise((resolve, reject) => {
+  const buffer = await new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 50 });
-    const stream = fs.createWriteStream(filePath);
-    doc.pipe(stream);
+    const chunks = [];
+    doc.on('data', (c) => chunks.push(c));
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
 
     const { width, height } = doc.page;
 
@@ -81,9 +78,12 @@ export async function renderCertificatePdf({ certificate, baseUrl }) {
       .text(`Certificate ID: ${certificate.code}`, 0, height - 90, { align: 'right', width: width - 60 });
 
     doc.end();
-    stream.on('finish', resolve);
-    stream.on('error', reject);
   });
 
-  return `${baseUrl}/uploads/certificates/${filename}`;
+  return storage.saveBuffer({
+    buffer,
+    key: storage.keyFor('certificates', filename),
+    contentType: 'application/pdf',
+    baseUrl,
+  });
 }
