@@ -49,7 +49,7 @@ export const APPLICATION_EXPERIENCE = [
   '10+ years',
 ];
 
-export const PAYMENT_METHODS = ['card', 'paypal', 'bank'];
+export const PAYMENT_METHODS = ['card', 'bank'];
 export const ORDER_STATUS = ['pending', 'paid', 'failed', 'refunded'];
 export const CHECKOUT_COUNTRIES = [
   'Nigeria',
