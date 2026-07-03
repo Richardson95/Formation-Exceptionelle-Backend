@@ -440,20 +440,6 @@ export const analytics = asyncHandler(async (req, res) => {
     },
     enrollmentTrend,
     revenueByCategory,
-    // Traffic/demographics require real analytics instrumentation — reasonable defaults until then.
-    trafficSources: [
-      { name: 'Organic Search', pct: 42 },
-      { name: 'Social Media', pct: 28 },
-      { name: 'Direct', pct: 18 },
-      { name: 'Referral', pct: 12 },
-    ],
-    demographics: [
-      { country: 'Nigeria', pct: 45 },
-      { country: 'Ghana', pct: 18 },
-      { country: 'Kenya', pct: 14 },
-      { country: 'South Africa', pct: 12 },
-      { country: 'Others', pct: 11 },
-    ],
     funnel: [
       { label: 'Visitors', value: Math.max(totalUsers * 10, 0) },
       { label: 'Sign Ups', value: totalUsers },
