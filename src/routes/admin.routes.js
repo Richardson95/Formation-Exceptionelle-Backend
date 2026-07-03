@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import * as ctrl from '../controllers/adminController.js';
+import * as instructorCtrl from '../controllers/instructorApplicationController.js';
 import { authRequired, adminOnly } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
 import {
@@ -38,6 +39,10 @@ router.post('/jobs/:id/approve', ctrl.approveJob);
 router.post('/jobs/:id/reject', validate({ body: rejectSchema }), ctrl.rejectJob);
 router.patch('/jobs/:id', validate({ body: jobAdminPatchSchema }), ctrl.updateJob);
 router.delete('/jobs/:id', ctrl.deleteJob);
+
+// Instructor applications (become-an-instructor review queue)
+router.get('/instructor-applications', instructorCtrl.listApplications);
+router.patch('/instructor-applications/:id', instructorCtrl.reviewApplication);
 
 // Payments
 router.get('/payments', ctrl.listPayments);

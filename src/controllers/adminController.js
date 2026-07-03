@@ -8,6 +8,7 @@ import Enrollment from '../models/Enrollment.js';
 import Order from '../models/Order.js';
 import Certificate from '../models/Certificate.js';
 import Review from '../models/Review.js';
+import InstructorApplication from '../models/InstructorApplication.js';
 import { relativeTime, dateOnly } from '../utils/relativeTime.js';
 import { normalizePricing, buildCourseFilter } from './courseController.js';
 import { normalizeSalary, withApplicantCounts } from './jobController.js';
@@ -28,6 +29,7 @@ export const stats = asyncHandler(async (req, res) => {
     internships,
     pendingCourses,
     pendingJobs,
+    pendingInstructorApplications,
     paidOrders,
     courses,
     ratingAgg,
@@ -42,6 +44,7 @@ export const stats = asyncHandler(async (req, res) => {
     Job.countDocuments({ type: 'Internship' }),
     Course.countDocuments({ status: 'pending' }),
     Job.countDocuments({ status: 'pending' }),
+    InstructorApplication.countDocuments({ status: 'pending' }),
     Order.find({ status: 'paid' }),
     Course.find().sort({ enrolledCount: -1 }).limit(5),
     Course.aggregate([
@@ -105,7 +108,8 @@ export const stats = asyncHandler(async (req, res) => {
     internships,
     pendingCourses,
     pendingJobs,
-    pendingApprovals: pendingCourses + pendingJobs,
+    pendingInstructorApplications,
+    pendingApprovals: pendingCourses + pendingJobs + pendingInstructorApplications,
     pageViews: 0,
     weeklyVisitors: 0,
     conversionRate,
