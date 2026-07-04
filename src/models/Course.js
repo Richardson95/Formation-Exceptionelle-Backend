@@ -19,6 +19,7 @@ const videoAssetSchema = new mongoose.Schema(
     durationLabel: String,
     thumbnail: String,
     playbackUrl: String,
+    embedUrl: String, // Bunny iframe player URL (persisted so playback survives reloads)
   },
   { _id: false }
 );

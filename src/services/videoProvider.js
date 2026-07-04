@@ -50,6 +50,24 @@ function bunnyPlaybackUrl(guid) {
 function bunnyThumbnail(guid) {
   return env.BUNNY_STREAM_CDN ? `https://${env.BUNNY_STREAM_CDN}/${guid}/thumbnail.jpg` : '';
 }
+function bunnyEmbedUrl(guid) {
+  return env.BUNNY_STREAM_LIBRARY_ID
+    ? `https://iframe.mediadelivery.net/embed/${env.BUNNY_STREAM_LIBRARY_ID}/${guid}`
+    : '';
+}
+
+/**
+ * The player URL the frontend should embed for this asset. Bunny serves HLS that
+ * a raw <video> can't play cross-browser (and blocks direct .m3u8 access), so we
+ * hand back the iframe embed player. Mock/url assets have no embed — the frontend
+ * falls back to playbackUrl in a <video> tag.
+ */
+export function embedUrlFor(asset) {
+  if (asset?.provider === 'bunny') {
+    return bunnyEmbedUrl(asset.providerUploadId || asset.assetId);
+  }
+  return '';
+}
 function mapBunnyStatus(code) {
   return code === 4 ? 'ready' : 'processing';
 }

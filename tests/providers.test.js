@@ -5,7 +5,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // stubbed). They complement the full e2e smoke test (`npm run smoke`).
 
 describe('paymentProvider (mock mode)', () => {
-  beforeEach(() => vi.resetModules());
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.PAYMENT_PROVIDER = 'mock'; // force mock regardless of ambient .env
+  });
+  afterEach(() => delete process.env.PAYMENT_PROVIDER);
 
   it('initialize + verify succeed without credentials', async () => {
     const { initializePayment, verifyPayment } = await import('../src/services/paymentProvider.js');
@@ -54,7 +58,11 @@ describe('paymentProvider (paystack mode)', () => {
 });
 
 describe('videoProvider (mock mode)', () => {
-  beforeEach(() => vi.resetModules());
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.VIDEO_PROVIDER = 'mock'; // force mock regardless of ambient .env
+  });
+  afterEach(() => delete process.env.VIDEO_PROVIDER);
 
   it('direct upload returns a ready local asset', async () => {
     const { handleDirectUpload } = await import('../src/services/videoProvider.js');
@@ -69,7 +77,11 @@ describe('videoProvider (mock mode)', () => {
 });
 
 describe('storageProvider (local mode)', () => {
-  beforeEach(() => vi.resetModules());
+  beforeEach(() => {
+    vi.resetModules();
+    process.env.STORAGE_DRIVER = 'local'; // force local regardless of ambient .env
+  });
+  afterEach(() => delete process.env.STORAGE_DRIVER);
 
   it('keyFor builds a clean object key', async () => {
     const { keyFor } = await import('../src/services/storageProvider.js');

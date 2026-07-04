@@ -16,6 +16,7 @@ function toContract(asset) {
     durationLabel: asset.durationLabel,
     thumbnail: asset.thumbnail,
     playbackUrl: asset.playbackUrl,
+    embedUrl: provider.embedUrlFor(asset),
   };
 }
 
