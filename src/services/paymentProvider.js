@@ -101,14 +101,18 @@ export async function refundPayment({ reference, amount }) {
   return { provider: 'mock', success: true };
 }
 
-/** Verify a webhook signature (provider-specific). Mock always trusts. */
+/**
+ * Verify a webhook signature. Fails closed: an unknown provider, a missing
+ * secret or a missing signature is never trusted. The provider comes straight
+ * from the request URL, so trusting anything that is not `paystack` would let
+ * anyone mark an order paid by POSTing to /payments/webhook/<anything>.
+ */
 export function verifyWebhookSignature({ provider, rawBody, signature }) {
-  if (provider === 'paystack' && env.PAYSTACK_SECRET_KEY) {
-    const hash = crypto
-      .createHmac('sha512', env.PAYSTACK_SECRET_KEY)
-      .update(rawBody)
-      .digest('hex');
-    return hash === signature;
-  }
-  return true; // mock / unconfigured
+  if (provider !== 'paystack') return false;
+  if (!env.PAYSTACK_SECRET_KEY || !signature) return false;
+
+  const hash = crypto.createHmac('sha512', env.PAYSTACK_SECRET_KEY).update(rawBody).digest('hex');
+  const a = Buffer.from(hash, 'utf8');
+  const b = Buffer.from(String(signature), 'utf8');
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
 }

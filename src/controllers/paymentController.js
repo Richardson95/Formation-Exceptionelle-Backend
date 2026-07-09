@@ -82,6 +82,15 @@ export const initialize = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * The gateway is the source of truth for what was actually paid. Never fulfil an
+ * order for less money than it is worth.
+ */
+function amountMatches(result, order) {
+  if (result.amount === undefined) return true; // provider didn't report one (mock)
+  return Math.round(result.amount) === Math.round(order.total);
+}
+
 export const verify = asyncHandler(async (req, res) => {
   const { reference } = req.body;
   const order = await Order.findOne({ providerReference: reference, userId: req.userId });
@@ -92,6 +101,9 @@ export const verify = asyncHandler(async (req, res) => {
     order.status = 'failed';
     await order.save();
     throw ApiError.badRequest('Payment could not be verified', 'payment_failed');
+  }
+  if (!amountMatches(result, order)) {
+    throw ApiError.badRequest('Payment amount does not match the order', 'amount_mismatch');
   }
 
   await fulfillOrder(order);
@@ -116,11 +128,21 @@ export const webhook = asyncHandler(async (req, res) => {
     event = {};
   }
 
-  // Paystack: { event: 'charge.success', data: { reference } }
+  // Paystack: { event: 'charge.success', data: { reference, status, amount } }.
+  // Anything else (charge.failed, refund.*, transfer.*) must not fulfil an order.
+  if (event?.event !== 'charge.success') return res.json({ received: true });
+
   const reference = event?.data?.reference;
-  if (reference) {
-    const order = await Order.findOne({ providerReference: reference });
-    if (order) await fulfillOrder(order);
+  if (!reference) return res.json({ received: true });
+
+  const order = await Order.findOne({ providerReference: reference });
+  if (!order) return res.json({ received: true });
+
+  // A valid signature proves the request came from Paystack, not that this body
+  // reflects a settled payment. Ask the API what was actually charged.
+  const result = await gateway.verifyPayment({ reference });
+  if (result.success && amountMatches(result, order)) {
+    await fulfillOrder(order);
   }
 
   res.json({ received: true });
