@@ -241,7 +241,9 @@ try {
 
   // Admin analytics shape
   const analytics = await req('GET', '/admin/analytics', { token: adminToken });
-  check('admin analytics shape', analytics.status === 200 && analytics.json.keyMetrics && Array.isArray(analytics.json.enrollmentTrend) && analytics.json.enrollmentTrend.length === 12 && Array.isArray(analytics.json.funnel));
+  check('admin analytics shape', analytics.status === 200 && analytics.json.keyMetrics && Array.isArray(analytics.json.enrollmentTrend) && analytics.json.enrollmentTrend.length === 12 && Array.isArray(analytics.json.revenueByCategory));
+  check('admin analytics reports no invented traffic metrics', !('funnel' in analytics.json) && !('pageViews' in analytics.json.keyMetrics) && !('uniqueVisitors' in analytics.json.keyMetrics));
+  check('admin stats reports no invented traffic metrics', !('pageViews' in stats.json) && !('weeklyVisitors' in stats.json));
 
   // Password reset flow
   const forgot = await req('POST', '/auth/forgot-password', { body: { email: 'sam@test.com' } });

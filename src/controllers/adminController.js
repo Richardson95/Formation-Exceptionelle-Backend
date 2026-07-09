@@ -110,8 +110,6 @@ export const stats = asyncHandler(async (req, res) => {
     pendingJobs,
     pendingInstructorApplications,
     pendingApprovals: pendingCourses + pendingJobs + pendingInstructorApplications,
-    pageViews: 0,
-    weeklyVisitors: 0,
     conversionRate,
     avgCourseRating: ratingAgg[0] ? Math.round(ratingAgg[0].avg * 10) / 10 : 0,
     revenueByMonth,
@@ -431,21 +429,17 @@ export const analytics = asyncHandler(async (req, res) => {
 
   const paidStudents = new Set(paidOrders.map((o) => o.userId)).size;
 
+  // Only figures we can derive from real records. There is no page-view or
+  // session tracking, so no traffic/funnel metrics are reported at all rather
+  // than reporting invented ones.
   res.json({
     keyMetrics: {
-      pageViews: { value: 0, change: 0 },
-      uniqueVisitors: { value: 0, change: 0 },
-      newEnrollments: { value: newEnrollmentsMTD, change: 0 },
-      revenueMTD: { value: revenueMTD, change: 0 },
+      newEnrollments: newEnrollmentsMTD,
+      revenueMTD,
+      signUps: totalUsers,
+      paidStudents,
     },
     enrollmentTrend,
     revenueByCategory,
-    funnel: [
-      { label: 'Visitors', value: Math.max(totalUsers * 10, 0) },
-      { label: 'Sign Ups', value: totalUsers },
-      { label: 'Course Views', value: enrollments.length * 2 },
-      { label: 'Add to Cart', value: Math.round(enrollments.length * 1.2) },
-      { label: 'Purchases', value: paidStudents },
-    ],
   });
 });
