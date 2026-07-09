@@ -75,8 +75,15 @@ export async function saveLocalFile({ filePath, key, contentType, baseUrl, clean
   return remoteUrl(key);
 }
 
-/** Upload an in-memory buffer (e.g. a generated certificate PDF). */
-export async function saveBuffer({ buffer, key, contentType, baseUrl }) {
+/**
+ * Upload an in-memory buffer (e.g. a generated certificate PDF).
+ *
+ * `contentDisposition` is stored on the object. The public bucket serves no CORS
+ * headers, so a browser cannot fetch these URLs into a blob; setting
+ * `attachment; filename="…"` makes the file download on a plain link click
+ * instead of opening in a tab under a generated name.
+ */
+export async function saveBuffer({ buffer, key, contentType, contentDisposition, baseUrl }) {
   if (!isRemote) {
     const abs = path.join(path.resolve(process.cwd(), env.UPLOAD_DIR), key);
     await fs.promises.mkdir(path.dirname(abs), { recursive: true });
@@ -91,6 +98,7 @@ export async function saveBuffer({ buffer, key, contentType, baseUrl }) {
       Key: key,
       Body: buffer,
       ContentType: contentType,
+      ...(contentDisposition ? { ContentDisposition: contentDisposition } : {}),
     })
   );
   return remoteUrl(key);

@@ -151,6 +151,7 @@ export async function renderCertificatePdf({ certificate, baseUrl }) {
     buffer,
     key: storage.keyFor('certificates', filename),
     contentType: 'application/pdf',
+    contentDisposition: `attachment; filename="${filename}"`,
     baseUrl,
   });
 }
