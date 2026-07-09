@@ -67,13 +67,41 @@ function canSeeUnpublished(req, instructorId) {
   return req.user.role === 'admin' || String(req.userId) === String(instructorId);
 }
 
+/**
+ * The `instructor.rating` / `instructor.students` fields on a course are written
+ * once at creation and never maintained, so they would report 0 forever. Derive
+ * them from the instructor's real reviews and enrollments across all of their
+ * courses. Students are counted distinctly — one learner on three of an
+ * instructor's courses is one student, not three.
+ */
+async function instructorStats(instructorId) {
+  const courseIds = (await Course.find({ instructorId }).select('_id')).map((c) => c.id);
+  if (courseIds.length === 0) return { rating: 0, students: 0 };
+
+  const [agg, students] = await Promise.all([
+    Review.aggregate([
+      { $match: { courseId: { $in: courseIds } } },
+      { $group: { _id: null, avg: { $avg: '$rating' } } },
+    ]),
+    Enrollment.distinct('userId', { courseId: { $in: courseIds } }),
+  ]);
+
+  return {
+    rating: agg[0] ? Math.round(agg[0].avg * 10) / 10 : 0,
+    students: students.length,
+  };
+}
+
 export const getCourse = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) throw ApiError.notFound('Course not found');
   if (course.status !== 'published' && !canSeeUnpublished(req, course.instructorId)) {
     throw ApiError.notFound('Course not found');
   }
-  res.json(course);
+
+  const json = course.toJSON();
+  json.instructor = { ...json.instructor, ...(await instructorStats(course.instructorId)) };
+  res.json(json);
 });
 
 export const instructorCourses = asyncHandler(async (req, res) => {
