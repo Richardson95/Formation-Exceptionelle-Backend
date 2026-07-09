@@ -61,17 +61,29 @@ export const featuredCourses = asyncHandler(async (req, res) => {
   res.json(courses);
 });
 
+// Unapproved courses are visible only to the instructor who owns them and to admins.
+function canSeeUnpublished(req, instructorId) {
+  if (!req.user) return false;
+  return req.user.role === 'admin' || String(req.userId) === String(instructorId);
+}
+
 export const getCourse = asyncHandler(async (req, res) => {
   const course = await Course.findById(req.params.id);
   if (!course) throw ApiError.notFound('Course not found');
+  if (course.status !== 'published' && !canSeeUnpublished(req, course.instructorId)) {
+    throw ApiError.notFound('Course not found');
+  }
   res.json(course);
 });
 
 export const instructorCourses = asyncHandler(async (req, res) => {
   const { instructorId } = req.params;
-  const courses = await Course.find({
+  const filter = {
     $or: [{ instructorId }, { 'instructor.id': instructorId }],
-  }).sort({ createdAt: -1 });
+  };
+  if (!canSeeUnpublished(req, instructorId)) filter.status = 'published';
+
+  const courses = await Course.find(filter).sort({ createdAt: -1 });
   res.json(courses);
 });
 
