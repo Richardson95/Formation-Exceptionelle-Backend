@@ -2,8 +2,11 @@ import asyncHandler from '../utils/asyncHandler.js';
 import ApiError from '../utils/ApiError.js';
 import Order from '../models/Order.js';
 import Course from '../models/Course.js';
+import Enrollment from '../models/Enrollment.js';
 import { fulfillOrder } from '../services/orderService.js';
 import * as gateway from '../services/paymentProvider.js';
+
+const list = (titles) => titles.join(', ');
 
 /**
  * Create a pending order from server-authoritative course prices and return the
@@ -14,6 +17,33 @@ export const initialize = asyncHandler(async (req, res) => {
 
   const courses = await Course.find({ _id: { $in: items } });
   if (courses.length === 0) throw ApiError.badRequest('No valid courses in order');
+
+  // Nobody pays twice for the same course. The client hides the buy buttons once
+  // you own a course, but it decides that from a list it may not have loaded, so
+  // the refusal has to live here — this is the only place that takes the money.
+  const owned = await Enrollment.find({
+    userId: req.userId,
+    courseId: { $in: courses.map((c) => c.id) },
+  }).select('courseId');
+
+  if (owned.length > 0) {
+    const ownedIds = new Set(owned.map((e) => e.courseId));
+    const titles = courses.filter((c) => ownedIds.has(c.id)).map((c) => c.title);
+    throw ApiError.badRequest(
+      `You are already enrolled in ${list(titles)}.`,
+      'already_enrolled'
+    );
+  }
+
+  // An instructor already has access to their own course; charging them for it
+  // would just move money in a circle.
+  const own = courses.filter((c) => String(c.instructorId) === String(req.userId));
+  if (own.length > 0) {
+    throw ApiError.badRequest(
+      `You cannot buy your own course (${list(own.map((c) => c.title))}).`,
+      'own_course'
+    );
+  }
 
   const orderItems = courses.map((c) => ({ courseId: c.id, title: c.title, price: c.price }));
   const subtotal = courses.reduce((s, c) => s + (c.originalPrice || c.price || 0), 0);
