@@ -85,10 +85,15 @@ export const initialize = asyncHandler(async (req, res) => {
 /**
  * The gateway is the source of truth for what was actually paid. Never fulfil an
  * order for less money than it is worth.
+ *
+ * Not an equality check: when the customer bears the Paystack fee, the amount
+ * charged exceeds the order total (a NGN 200 course settles as NGN 203.05).
+ * Underpayment is the threat; paying more than asked is not.
  */
-function amountMatches(result, order) {
+function amountSufficient(result, order) {
   if (result.amount === undefined) return true; // provider didn't report one (mock)
-  return Math.round(result.amount) === Math.round(order.total);
+  const kobo = (n) => Math.round((n || 0) * 100);
+  return kobo(result.amount) >= kobo(order.total);
 }
 
 export const verify = asyncHandler(async (req, res) => {
@@ -102,8 +107,8 @@ export const verify = asyncHandler(async (req, res) => {
     await order.save();
     throw ApiError.badRequest('Payment could not be verified', 'payment_failed');
   }
-  if (!amountMatches(result, order)) {
-    throw ApiError.badRequest('Payment amount does not match the order', 'amount_mismatch');
+  if (!amountSufficient(result, order)) {
+    throw ApiError.badRequest('Payment amount is less than the order total', 'amount_mismatch');
   }
 
   await fulfillOrder(order);
@@ -141,7 +146,7 @@ export const webhook = asyncHandler(async (req, res) => {
   // A valid signature proves the request came from Paystack, not that this body
   // reflects a settled payment. Ask the API what was actually charged.
   const result = await gateway.verifyPayment({ reference });
-  if (result.success && amountMatches(result, order)) {
+  if (result.success && amountSufficient(result, order)) {
     await fulfillOrder(order);
   }
 
