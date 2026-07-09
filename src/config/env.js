@@ -75,6 +75,12 @@ const env = {
 env.isProd = env.NODE_ENV === 'production';
 env.isDev = env.NODE_ENV === 'development';
 
+// CLIENT_ORIGIN doubles as the CORS allowlist, so it may hold several
+// comma-separated origins. Anything that builds a URL for the browser — gateway
+// redirects, password-reset links, email buttons — needs exactly one: the first,
+// which is the canonical site origin.
+env.SITE_ORIGIN = env.CLIENT_ORIGIN.split(',')[0].trim().replace(/\/+$/, '');
+
 // ── Derived "is this integration actually configured?" flags ────────────────
 // Each real provider activates only when its driver is selected AND its required
 // credentials are present; otherwise the code transparently falls back to mock.

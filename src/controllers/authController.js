@@ -87,7 +87,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
       tokenHash: hashToken(rawToken),
       expiresAt: new Date(Date.now() + RESET_TTL_MS),
     });
-    const resetUrl = `${env.CLIENT_ORIGIN}/auth/reset-password?token=${rawToken}`;
+    const resetUrl = `${env.SITE_ORIGIN}/auth/reset-password?token=${rawToken}`;
     sendPasswordResetEmail(user, resetUrl).catch(() => {});
     if (env.isDev) {
       // eslint-disable-next-line no-console

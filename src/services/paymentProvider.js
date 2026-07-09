@@ -38,7 +38,7 @@ async function paystack(path, { method = 'GET', body } = {}) {
 export async function initializePayment({ order, email }) {
   if (env.paystackEnabled) {
     const reference = newRef();
-    const callback = env.PAYSTACK_CALLBACK_URL || `${env.CLIENT_ORIGIN}/lms/checkout`;
+    const callback = env.PAYSTACK_CALLBACK_URL || `${env.SITE_ORIGIN}/lms/checkout`;
     const data = await paystack('/transaction/initialize', {
       method: 'POST',
       body: {
@@ -64,7 +64,7 @@ export async function initializePayment({ order, email }) {
   return {
     provider: 'mock',
     reference,
-    authorizationUrl: `${env.CLIENT_ORIGIN}/checkout/mock-pay?reference=${reference}`,
+    authorizationUrl: `${env.SITE_ORIGIN}/checkout/mock-pay?reference=${reference}`,
     publicKey: env.PAYSTACK_PUBLIC_KEY || 'pk_mock',
   };
 }

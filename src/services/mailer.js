@@ -91,7 +91,7 @@ export function sendWelcomeEmail(user) {
     html: brandedEmail({
       title: `Welcome, ${user.firstName}!`,
       body: `<p>Your account is ready. Explore 200+ courses, find jobs, and grow your career.</p>
-             ${ctaButton('Browse Courses', `${env.CLIENT_ORIGIN}/lms`)}`,
+             ${ctaButton('Browse Courses', `${env.SITE_ORIGIN}/lms`)}`,
     }),
     text: `Welcome to Formation Exceptionelle, ${user.firstName}!`,
   });
@@ -119,7 +119,7 @@ export function sendEnrollmentEmail(user, courses) {
     html: brandedEmail({
       title: 'Payment received — you are enrolled!',
       body: `<p>Thanks for your purchase. You now have access to:</p><ul>${list}</ul>
-             ${ctaButton('Start Learning', `${env.CLIENT_ORIGIN}/lms`)}`,
+             ${ctaButton('Start Learning', `${env.SITE_ORIGIN}/lms`)}`,
     }),
     text: `You are enrolled in: ${courses.map((c) => c.title).join(', ')}`,
   });
