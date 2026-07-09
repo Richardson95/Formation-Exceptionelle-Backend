@@ -16,6 +16,14 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret';
 process.env.PORT = '5099';
 
+// Force the mock gateway. Without this the smoke run picks up whatever keys are
+// in .env and opens real transactions against Paystack — with live keys, real
+// charges. It also cannot verify them, since nobody ever pays.
+process.env.PAYMENT_PROVIDER = 'mock';
+process.env.PAYSTACK_SECRET_KEY = '';
+process.env.MAIL_TRANSPORT = 'console';
+process.env.STORAGE_DRIVER = 'local';
+
 const { connectDB, disconnectDB } = await import('../src/config/db.js');
 await connectDB(process.env.MONGODB_URI);
 
